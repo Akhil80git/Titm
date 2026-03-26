@@ -1,8 +1,9 @@
 {
+  "version": 2,
   "rewrites": [
     {
       "source": "/api/search",
-      "destination": "https://searx.work/search"
+      "destination": "https://searxng.work/search"
     }
   ]
 }
