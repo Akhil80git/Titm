@@ -41,23 +41,36 @@
     const resultsDiv = document.getElementById('results');
     const loader = document.getElementById('loader');
 
+    // Working public SearXNG instance (JSON support wala)
+    const SEARXNG_BASE = "https://searx.tiekoetter.com";
+
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const query = document.getElementById('query').value;
+        const query = document.getElementById('query').value.trim();
         
+        if (!query) return;
+
         // Reset UI
         resultsDiv.innerHTML = '';
         loader.style.display = 'block';
 
         try {
-            // Vercel Rewrite (/api/search) ka use kar rahe hain
-            const url = `/api/search?q=${encodeURIComponent(query)}&format=json&engines=google,bing,duckduckgo`;
-            
+            const url = `\( {SEARXNG_BASE}/search?q= \){encodeURIComponent(query)}&format=json&engines=google,bing,duckduckgo`;
+
             const response = await fetch(url);
             
-            if (!response.ok) throw new Error('Network response was not ok');
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
 
-            const data = await response.json();
+            const text = await response.text();
+            
+            // Agar HTML aa gaya toh error
+            if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+                throw new Error("Instance ne HTML diya, JSON nahi. Instance change karna padega.");
+            }
+
+            const data = JSON.parse(text);
             loader.style.display = 'none';
 
             if (data.results && data.results.length > 0) {
@@ -65,8 +78,8 @@
                     const card = document.createElement('div');
                     card.className = 'card';
                     card.innerHTML = `
-                        <a href="${item.url}" target="_blank">${item.title}</a>
-                        <p>${item.content || 'Koi jaankari uplabdha nahi hai.'}</p>
+                        <a href="\( {item.url || '#'}" target="_blank"> \){item.title || 'No Title'}</a>
+                        <p>${item.content || item.abstract || 'Koi description nahi mila.'}</p>
                     `;
                     resultsDiv.appendChild(card);
                 });
@@ -79,12 +92,11 @@
             resultsDiv.innerHTML = `
                 <div class="error-msg">
                     <strong>Error:</strong> Search fail ho gayi!<br>
-                    1. Ho sakta hai SearXNG instance down ho.<br>
-                    2. vercel.json mein 'destination' URL badal kar dekhein.<br>
-                    <small style="display:block; margin-top:5px;">Tech Detail: ${error.message}</small>
+                    Instance busy/down ho sakta hai.<br>
+                    Tech Detail: ${error.message}
                 </div>
             `;
-            console.error('Fetch Error:', error);
+            console.error('Search Error:', error);
         }
     });
 </script>
