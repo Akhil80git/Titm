@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Private Search</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; background: #f8f9fa; }
+        .search-box { display: flex; gap: 10px; margin-bottom: 30px; }
+        input { flex: 1; padding: 12px; border: 1px solid #dfe1e5; border-radius: 24px; outline: none; font-size: 16px; box-shadow: 0 1px 6px rgba(32,33,36,.28); }
+        button { padding: 10px 25px; border-radius: 24px; border: none; background: #1a73e8; color: white; cursor: pointer; font-weight: bold; }
+        button:hover { background: #1557b0; }
+        .result-item { background: white; padding: 15px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .result-item a { color: #1a0dab; text-decoration: none; font-size: 18px; font-weight: 500; }
+        .result-item a:hover { text-decoration: underline; }
+        .result-item p { color: #4d5156; font-size: 14px; margin-top: 5px; line-height: 1.4; }
+        #loader { text-align: center; display: none; color: #70757a; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <h2 style="text-align: center; color: #202124;">Ultra Search</h2>
+
+    <form class="search-box" id="searchForm">
+        <input type="text" id="query" placeholder="Kuch bhi search karein..." required>
+        <button type="submit">Search</button>
+    </form>
+
+    <div id="loader">Searching... Thoda intezar karein...</div>
+    <div id="results"></div>
+
+    <script>
+        const searchForm = document.getElementById('searchForm');
+        const resultsDiv = document.getElementById('results');
+        const loader = document.getElementById('loader');
+
+        searchForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const query = document.getElementById('query').value;
+            
+            // UI Reset
+            resultsDiv.innerHTML = '';
+            loader.style.display = 'block';
+
+            try {
+                // Hum apne hi banaye hue /api/search endpoint ko call kar rahe hain
+                const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&format=json`);
+                const data = await response.json();
+
+                loader.style.display = 'none';
+
+                if (data.results && data.results.length > 0) {
+                    data.results.slice(0, 10).forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'result-item';
+                        div.innerHTML = `
+                            <a href="${item.url}" target="_blank">${item.title}</a>
+                            <p>${item.content || 'No description available.'}</p>
+                        `;
+                        resultsDiv.appendChild(div);
+                    });
+                } else {
+                    resultsDiv.innerHTML = '<p style="text-align:center">Koi result nahi mila.</p>';
+                }
+            } catch (error) {
+                loader.style.display = 'none';
+                resultsDiv.innerHTML = '<p style="color:red; text-align:center">Error: Search fail ho gayi. (CORS ya Network issue)</p>';
+                console.error(error);
+            }
+        });
+    </script>
+</body>
+</html>
